@@ -1,0 +1,41 @@
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+# Google Sheets credentials
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+client = gspread.authorize(creds)
+
+# Access the Google Sheets
+sheet = client.open('Your Google Sheet Name').sheet1
+
+# Read data from Google Sheets
+data = sheet.get_all_records()
+
+# Email credentials
+sender_email = "your.email@gmail.com"
+sender_password = "your_password"
+
+# Iterate through data and send emails
+for row in data:
+    receiver_email = row['Email']  # Assuming the email addresses are in a column named 'Email'
+    message = MIMEMultipart()
+    message['From'] = sender_email
+    message['To'] = receiver_email
+    message['Subject'] = 'Your Subject'
+
+    body = "Dear {},\n\nThis is a sample email.\n\nBest regards,\nYour Name".format(row['Name'])
+    message.attach(MIMEText(body, 'plain'))
+
+    try:
+server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.ehlo()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+        print("Email sent successfully to", receiver_email)
+        server.close()
+    except Exception as e:
+        print("Failed to send email to", receiver_email, "Error:", str(e))
